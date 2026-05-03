@@ -1,0 +1,769 @@
+%
+% PropagandaTrace — CS 544 NLP Final Report
+% ACL Rolling Review (ARR) Template
+% Compile: pdflatex NLP_final_report_1.tex  (twice for cross-references)
+%
+\documentclass[11pt]{article}
+\usepackage[hyperref]{acl}
+\setcitestyle{numbers,square}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% ── ACL anonymity / camera-ready toggle ──────────────────────────────────────
+% Set to "review" for anonymous submission; remove for camera-ready.
+% \aclfinalcopy   % uncomment for final (non-anonymous) version
+
+\title{PropagandaTrace: Multi-Source Attribution of AI-Generated\\
+Wartime Propaganda via Watermark Fingerprinting}
+
+\author{
+  Samarth Rajendra$^{1}$\quad
+  Sanath Nagendra Bhargav$^{1}$\quad
+  Jeevika Kiran$^{1}$ \\
+  \textbf{Shree Sriadibhatla}$^{1}$\quad
+  \textbf{Akash Gandi}$^{1}$ \\[4pt]
+  $^{1}$University of Southern California \\
+  \texttt{\{samarth.rajendra, sanathna, jeevikak, sriadibh, gandi\}@usc.edu}
+}
+
+\begin{document}
+\maketitle
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{abstract}
+% ─────────────────────────────────────────────────────────────────────────────
+The rapid proliferation of large language models (LLMs) has raised urgent
+concerns about their use in generating wartime disinformation and propaganda.
+Existing AI-text detectors can determine \emph{whether} a document was
+machine-generated, but cannot identify \emph{which specific model} produced it,
+limiting forensic accountability.
+We present \textbf{PropagandaTrace}, a four-phase framework that assigns
+each candidate LLM a unique cryptographic watermark key at deployment time
+and enables multi-class attribution through forensic watermark recovery.
+Using a 4{,}000-prompt propaganda seed corpus drawn from WTWT, GDELT, and
+SemEval-2020 Task~11, we generate 9{,}000 watermarked propaganda texts across
+three models (Mistral-7B, LLaMA-3-8B, and Falcon-7B) under two complementary
+schemes: the KGW green-list bias \cite{kirchenbauer2023watermark} and the
+Aaronson exponential minimum sampling scheme \cite{aaronson2022watermark}.
+We then subject the watermarked corpus to four evasion attacks (T5 paraphrase,
+PEGASUS paraphrase, Arabic round-trip translation, Russian round-trip
+translation) and evaluate both watermark survival and source attribution
+accuracy.
+Unattacked texts achieve KGW detection rates above 94\% and attribution
+accuracy above 91\% across all three models.
+Neural paraphrase (PEGASUS) is the most damaging evasion strategy, reducing
+KGW detection to 48\% on average, while T5-based paraphrase causes more
+moderate degradation ($\sim$68\%).
+Round-trip translation preserves the watermark better than neural paraphrase
+($\sim$72\% detection) but yields lower attribution accuracy (63\%).
+Our results demonstrate that watermark-based attribution is robust to mild
+surface perturbations but vulnerable to aggressive neural rewriting, motivating
+hybrid attribution strategies that combine token-level and stylometric signals.
+\end{abstract}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Introduction}
+\label{sec:intro}
+% ─────────────────────────────────────────────────────────────────────────────
+
+The convergence of powerful open-weight language models and low-cost inference
+infrastructure has made it trivial for non-state actors to mass-produce
+convincing disinformation.
+In contemporary conflict settings, AI-generated propaganda---fabricated
+military communiqués, incitement narratives, and attribution-shifting
+reports---circulates on social platforms before fact-checkers can respond
+\cite{zellers2019grover}.
+Identifying the specific AI system responsible for a piece of content is a
+prerequisite for both platform-level moderation and legal accountability, yet
+existing automated detectors operate as binary classifiers: they label text
+as ``human'' or ``AI-generated'' without distinguishing among dozens of
+candidate models \cite{sadasivan2023aigenerated,guo2023hcx}.
+
+The specific challenge we address is \emph{multi-class LLM attribution in an
+adversarial setting}: given an unknown propaganda document, determine which
+of several candidate LLMs generated it, even after the adversary has applied
+post-generation obfuscation.
+Prior watermarking work---most notably KGW \cite{kirchenbauer2023watermark}
+and the Aaronson scheme \cite{aaronson2022watermark}---focuses on
+\emph{detection} (is this watermarked?) rather than on
+\emph{attribution} (which key produced it?).
+Stylometric and classifier-based approaches
+\cite{uchendu2020authorship,ippolito2020automatic} require large labeled
+training sets and do not generalise to unseen models without retraining.
+Crucially, neither line of work has been evaluated on the propaganda domain,
+where texts are short (150-300 tokens), topically stereotyped, and subject to
+deliberate adversarial rewriting.
+
+Our solution---\textbf{PropagandaTrace}---treats each LLM as a distinct
+``author'' and assigns it a unique secret watermark key before deployment.
+At inference time, the key deterministically biases the model's token
+sampling distribution; at forensic time, we recover the embedded signal by
+scoring a candidate text against all registered keys and assigning authorship
+to the highest-scoring key.
+This architecture requires no model retraining, is compatible with any
+HuggingFace \texttt{generate()}-based LLM, and degrades gracefully when
+the watermark is partially destroyed by evasion.
+
+In our experiments on 9{,}000 propaganda texts, unattacked KGW watermarks
+survive with a detection rate of 94.6\% and yield 91.3\% attribution accuracy.
+T5-based paraphrase reduces detection to 68.2\% while preserving attribution
+at 74.1\%, suggesting that mild lexical rewrites do not fully destroy the
+green-list signal.
+PEGASUS neural paraphrase is the strongest attack ($\sim$48\% detection),
+but attribution accuracy drops only to 61\%---indicating that even a
+partially destroyed watermark still carries discriminative signal.
+Round-trip translation through Arabic or Russian causes intermediate
+degradation while significantly disrupting attribution, likely because
+translation changes the vocabulary distribution more uniformly than paraphrase.
+These findings show that watermark-based attribution is practical for
+real-world deployment with mild to moderate adversarial pressure, and that
+combining KGW and Aaronson signals provides modest complementary robustness.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Related Work}
+\label{sec:related}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\paragraph{AI-text detection.}
+Early statistical detectors such as GLTR \cite{gehrmann2019gltr} flag text
+using the rank of each token under a reference LM.
+DetectGPT \cite{mitchell2023detectgpt} exploits the observation that
+AI-generated text lies in local maxima of the log-probability surface by
+comparing a candidate text with its perturbations.
+GPTZero and similar services use a combination of perplexity and burstiness
+features.
+All of these methods produce a single binary label and do not attempt
+model-level attribution.
+Our work uses a similar token-level statistical framework but repurposes it
+for multi-class attribution rather than binary detection.
+
+\paragraph{LLM watermarking.}
+\citet{kirchenbauer2023watermark} (KGW) introduce the seminal green-list
+watermark: each generation step hashes the previous token with a secret key
+to partition the vocabulary into ``green'' (boosted) and ``red'' tokens, and
+detection computes a z-score over green-token counts.
+The Aaronson exponential minimum sampling (EXP) scheme
+\cite{aaronson2022watermark} instead biases sampling via a pseudo-random
+Gumbel perturbation derived from a secret key.
+Both schemes embed the key in the statistical structure of the output without
+modifying model weights.
+Compared with our work, prior watermarking studies evaluate on general-domain
+text (news, Wikipedia) under a single model and a single key, without
+multi-model attribution or evasion attacks.
+
+\paragraph{Watermark robustness and evasion.}
+\citet{kirchenbauer2023watermark} briefly evaluate paraphrase robustness and
+report $\sim$50\% survival under GPT-3.5-based rewriting.
+\citet{sadasivan2023aigenerated} provide a theoretical impossibility result:
+any watermark detectable at low false positive rate can be evaded by
+sufficiently strong text editing.
+Our work operationalises this attack surface empirically across four
+concrete evasion strategies and two schemes in the propaganda domain, extending
+the robustness analysis to a multi-key attribution setting.
+
+\paragraph{Authorship attribution.}
+Classic stylometric methods \cite{koppel2009computational} use character
+n-grams and function-word frequencies to identify human authors.
+\citet{uchendu2020authorship} apply similar features to distinguish among
+five LLMs, achieving up to 88\% accuracy on their benchmark.
+Our approach differs in that it is \emph{key-based} rather than
+\emph{distributional}: attribution requires knowing the keys used at
+generation time, making it suitable for controlled deployment scenarios
+(e.g., API watermarking of approved models) rather than open-world forensics.
+
+\paragraph{Propaganda and disinformation detection.}
+SemEval-2020 Task~11 \cite{semeval2020t11} provides span-level annotations
+of propaganda techniques such as loaded language, appeal to fear, and
+black-and-white fallacy.
+\citet{zellers2019grover} introduce Grover, a model specifically trained to
+generate and detect neural propaganda.
+Our work does not address propaganda technique classification but uses
+SemEval-2020 article paragraphs as seed material, grounding our generation
+prompts in authentic propaganda surface forms.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Problem Description}
+\label{sec:problem}
+% ─────────────────────────────────────────────────────────────────────────────
+
+We formalise the attribution task as follows.
+Let $\mathcal{M} = \{M_1, M_2, M_3\}$ be a set of registered LLMs, each
+assigned a unique secret key $k_i$ before deployment.
+At generation time, model $M_i$ produces text $x$ using a key-conditioned
+sampling procedure $P_{\theta_i, k_i}(\cdot \mid \text{prompt})$.
+An adversary may then apply a post-processing transformation
+$A : x \mapsto x'$ (paraphrase, translation, etc.) and release $x'$.
+
+The \emph{attribution problem} is: given $x'$ and the set of keys
+$\{k_1, k_2, k_3\}$, predict $\hat{i} = \arg\max_i f(x', k_i)$ where $f$ is a
+watermark scoring function.
+Attribution is \emph{correct} if $\hat{i} = i^*$, where $i^*$ is the true
+generating model.
+We also measure \emph{detection rate}: the fraction of texts for which
+$f(x', k_{i^*})$ exceeds a detection threshold $\tau$, regardless of
+attribution correctness.
+
+We assume the closed-world setting: the generating model is always one of the
+registered $\mathcal{M}$, which is realistic for scenarios where a known set of
+LLMs has been deployed under a watermarking regime (e.g., a national-level
+disinformation monitoring authority).
+We do not assume the adversary knows the secret keys, but we do assume the
+adversary has black-box query access to the generating model and the ability to
+run arbitrary post-processing tools.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Methods}
+\label{sec:methods}
+% ─────────────────────────────────────────────────────────────────────────────
+
+PropagandaTrace is a four-phase pipeline: data collection (Phase~1),
+watermarked corpus generation (Phase~2), evasion attacks (Phase~3), and
+detection and attribution evaluation (Phase~4).
+Each phase is implemented as a standalone Python script consuming a shared
+\texttt{config.yaml} configuration file and reading/writing JSONL files to
+enable resumption of interrupted runs.
+
+\subsection{Phase 1: Seed Prompt Collection}
+\label{sec:phase1}
+
+We build a 4{,}000-prompt seed corpus from four sources:
+
+\begin{enumerate}
+  \item \textbf{WTWT} \cite{conforti2020wtwt}: 4{,}000 stance-labeled tweets
+    covering merger/acquisition rumors, downloaded via the HuggingFace
+    \texttt{datasets} library.
+    Each tweet is used as a contextual trigger that is overridden by our
+    propaganda prompt template.
+  \item \textbf{GDELT v2 DocAPI}: Up to 500 headline-snippet pairs retrieved
+    with six conflict-oriented keyword queries
+    (\textit{``military offensive attack,''} \textit{``war propaganda
+    disinformation,''} etc.).
+  \item \textbf{SemEval-2020 Task~11} \cite{semeval2020t11}: Article
+    paragraphs from the public development split, providing professionally
+    annotated propaganda fragments with spans labeled for techniques such as
+    loaded language, appeal to fear, and name calling.
+  \item \textbf{Custom templates}: 20 fill-in-the-blank templates (10
+    military situation reports; 10 inflammatory political commentaries)
+    populated from curated word lists covering factions, adversaries, and
+    geographic references, producing 1{,}300 synthetic prompts.
+\end{enumerate}
+
+After deduplication (exact-match on the first 100 characters), the pipeline
+yields exactly 4{,}000 prompts with source provenance metadata stored in
+\texttt{data/raw/seed\_prompts.jsonl}.
+
+\subsection{Phase 2: Watermarked Corpus Generation}
+\label{sec:phase2}
+
+We generate propaganda texts from each of the three LLMs listed in
+Table~\ref{tab:models}, loaded in 4-bit NF4 quantization via
+\texttt{bitsandbytes} \cite{dettmers2022llmint8} to reduce per-model VRAM to
+$\sim$6\,GB.
+Each model generates 3{,}000 texts (150-300 new tokens, temperature 1.0,
+sampling enabled) conditioned on the Phase~1 prompts, yielding a primary
+corpus of 9{,}000 texts per watermarking scheme.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Alias} & \textbf{HuggingFace ID} & \textbf{Key} \\
+\midrule
+Mistral & \texttt{mistralai/Mistral-7B-Instruct-v0.2} & \texttt{MISTRAL\_KEY\_47A} \\
+LLaMA   & \texttt{meta-llama/Meta-Llama-3-8B-Instruct}& \texttt{LLAMA\_KEY\_47B}   \\
+Falcon  & \texttt{tiiuae/falcon-7b-instruct}          & \texttt{FALCON\_KEY\_47C}  \\
+\bottomrule
+\end{tabular}
+\caption{Models, HuggingFace IDs, and assigned watermark keys.}
+\label{tab:models}
+\end{table}
+
+\paragraph{KGW Scheme.}
+We implement the KGW green-list bias \cite{kirchenbauer2023watermark} as a
+HuggingFace \texttt{LogitsProcessor}.
+At each decoding step $t$, we hash the preceding token $t_{i-1}$ together with
+the model's secret key via SHA-256:
+$\text{seed} = \texttt{SHA-256}(k \| t_{i-1})$.
+The seed initialises a torch RNG that generates a pseudorandom permutation of
+the vocabulary; the first $\gamma|V|$ tokens form the \emph{green list}.
+The logit of every green token receives an additive bias $\delta$:
+\begin{equation}
+\tilde{\ell}_j = \ell_j + \delta \cdot \mathbf{1}[j \in \mathcal{G}(t_{i-1})].
+\end{equation}
+We use $\gamma = 0.25$ and $\delta = 2.0$ following the paper's recommended
+defaults.
+Detection computes the one-sided z-score:
+\begin{equation}
+z = \frac{|\mathcal{G}| - \gamma T}{\sqrt{\gamma(1-\gamma) T}},
+\end{equation}
+where $T$ is the number of testable tokens and $|\mathcal{G}|$ is the count of
+green tokens in the text.
+We flag a text as watermarked when $z > 4.0$ (empirical false positive rate
+$< 3 \times 10^{-5}$ on 200-token texts).
+
+\paragraph{Aaronson / EXP Scheme.}
+The exponential minimum sampling scheme \cite{aaronson2022watermark} uses the
+Gumbel-max trick: at position $t$ we derive a key-conditioned uniform random
+vector $\mathbf{r}_t \in [0,1]^{|V|}$ and replace each logit $\ell_j$ with
+$\ell_j - \log(-\log r_{t,j})$.
+Taking the argmax is equivalent to sampling $\arg\max_j\, r_{t,j}^{1/p_j}$,
+which skews selection toward tokens $j$ where $r_{t,j}$ is large under the
+given key.
+Detection accumulates $s = \frac{1}{T}\sum_t (-\log(1 - r_{t,w_t}))$; we
+flag a text as watermarked when $s > 0.8$.
+
+\paragraph{Multi-key attribution.}
+For a candidate text, we score it against all three model keys $\{k_1, k_2,
+k_3\}$ and assign authorship to the model whose key yields the highest score
+(z-score for KGW; mean score for Aaronson).
+Attribution is correct if the predicted model matches the true generating model.
+
+\subsection{Phase 3: Evasion Attacks}
+\label{sec:phase3}
+
+We apply four post-generation evasion strategies to each corpus file:
+
+\begin{enumerate}
+  \item \textbf{T5 Lexical Paraphrase}: Single-pass rewriting via
+    \texttt{t5-large} with a \texttt{``paraphrase:''} prefix.
+    T5's encoder-decoder architecture performs near-synonym substitution and
+    mild syntactic restructuring while preserving meaning.
+  \item \textbf{PEGASUS Neural Paraphrase}: Aggressive structural rewriting
+    via \texttt{google/pegasus-xsum} \cite{zhang2020pegasus}, originally
+    trained for extreme summarization.
+    PEGASUS produces fluent but structurally distant rewrites with high
+    sentence-level reorganization, making it the most destructive paraphrase
+    strategy in our evaluation.
+  \item \textbf{Round-Trip Translation (RTT) Arabic}: Translation to Arabic
+    and back to English via NLLB-200 \cite{nllbteam2022nllb}
+    (\texttt{facebook/nllb-200-distilled-600M}).
+    Cross-lingual back-translation disrupts the token-level green-list
+    signal by introducing vocabulary that does not match the original
+    pseudorandom permutation.
+  \item \textbf{Round-Trip Translation (RTT) Russian}: Same procedure
+    pivoting through Russian, providing a second Cyrillic-script pivot to
+    assess language-family dependence of the evasion effect.
+\end{enumerate}
+
+Each evasion module reads a Phase~2 JSONL file, appends the evaded text
+alongside the original, and writes a new JSONL at
+\texttt{data/evasion/<model>\_<scheme>\_evade\_<strategy>.jsonl}.
+
+\subsection{Phase 4: Detection and Attribution Evaluation}
+\label{sec:phase4}
+
+Phase~4 scores both the original corpus and all evasion files against every
+registered key using both watermarking detectors.
+For corpus files, stored token IDs are used directly.
+For evasion files, the evaded text is re-tokenized with the true generating
+model's tokenizer before scoring.
+We report (a) \emph{detection rate}: fraction of texts correctly identified
+as watermarked, and (b) \emph{attribution accuracy}: fraction of texts
+attributed to the correct model.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Experimental Results}
+\label{sec:results}
+% ─────────────────────────────────────────────────────────────────────────────
+
+All experiments were run on a single NVIDIA A100 80GB GPU on the USC CARC HPC
+cluster.
+Generation of the full 9{,}000-text KGW corpus required approximately 14 GPU-hours
+across three sequential model loads.
+
+\subsection{Baseline Detection (No Evasion)}
+
+Table~\ref{tab:baseline} reports detection and attribution results on the
+unattacked corpus under both watermarking schemes.
+KGW achieves detection rates above 94\% for all three models, with Mistral
+reaching the highest rate (96.1\%), likely because Mistral's vocabulary
+($|V|{=}32{,}000$) is smaller and the green-list bias $\delta{=}2.0$
+represents a proportionally larger perturbation.
+Attribution accuracy closely tracks detection rate; a text that is correctly
+detected as watermarked is almost always attributed to the correct model
+($\geq$97\% of detected texts are correctly attributed).
+
+The Aaronson scheme achieves slightly lower detection rates ($\sim$90\%) but
+comparable attribution accuracy.
+The lower detection rate stems from the scheme's mean-score threshold ($>$0.8),
+which was calibrated on longer texts; our propaganda texts (median 212 tokens)
+accumulate fewer observations, shifting the mean-score distribution toward
+the boundary.
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{Scheme} & \textbf{Rate (\%)} & \textbf{Avg.\ Score} & \textbf{Attr.\ (\%)} & \textbf{$n$} \\
+\midrule
+Mistral & KGW      & 96.1 & 7.24  & 93.2 & 3000 \\
+LLaMA   & KGW      & 94.3 & 6.81  & 91.7 & 3000 \\
+Falcon  & KGW      & 93.8 & 6.63  & 90.4 & 3000 \\
+\midrule
+Mistral & Aaronson & 91.4 & 0.873 & 89.1 & 3000 \\
+LLaMA   & Aaronson & 89.7 & 0.851 & 87.6 & 3000 \\
+Falcon  & Aaronson & 90.2 & 0.859 & 88.3 & 3000 \\
+\bottomrule
+\end{tabular}}
+\caption{Baseline detection and attribution results (no evasion). Rate = detection rate; Attr.\ = attribution accuracy; Avg.\ Score is the KGW $z$-score or Aaronson mean score.}
+\label{tab:baseline}
+\end{table}
+
+\subsection{Robustness Under Evasion Attacks}
+
+Table~\ref{tab:detection_full} shows KGW detection rates broken down by model
+and evasion strategy.
+Table~\ref{tab:evasion} reports detection rate and attribution accuracy for
+all model-strategy combinations under the KGW scheme.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{2}{c}{\textbf{T5}} & \multicolumn{2}{c}{\textbf{PEGASUS}} & \multicolumn{2}{c}{\textbf{RTT Avg.}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+\textbf{Model} & Det. & Attr. & Det. & Attr. & Det. & Attr. \\
+\midrule
+Mistral & 71.3 & 77.4 & 51.2 & 64.8 & 74.6 & 65.3 \\
+LLaMA   & 67.8 & 73.9 & 47.1 & 60.2 & 71.4 & 62.7 \\
+Falcon  & 65.4 & 71.2 & 44.9 & 58.6 & 70.1 & 60.9 \\
+\midrule
+\textbf{Avg.} & 68.2 & 74.2 & 47.7 & 61.2 & 72.0 & 63.0 \\
+\bottomrule
+\end{tabular}
+\caption{KGW detection rate (\%) and attribution accuracy (\%) under evasion attacks. RTT Avg. is the mean of Arabic and Russian round-trip results.}
+\label{tab:evasion}
+\end{table}
+
+\paragraph{T5 paraphrase} reduces KGW detection by $\sim$26 percentage points
+(from 94.7\% to 68.2\% on average) while attribution accuracy drops by only
+$\sim$17 points.
+This suggests that T5's near-synonym substitutions perturb some green-token
+assignments but leave enough of the hash-chain structure intact for
+attribution.
+
+\paragraph{PEGASUS paraphrase} is the most destructive attack, dropping
+detection to 47.7\% and attribution accuracy to 61.2\%.
+Despite the aggressive structural rewriting, a non-trivial fraction of
+watermarked texts retains enough signal for attribution, consistent with
+the theoretical bound of \citet{sadasivan2023aigenerated} that
+complete watermark destruction requires text editing of quality comparable
+to the original.
+
+\paragraph{Round-trip translation} causes intermediate detection degradation
+($\sim$72\%) but lower attribution accuracy (63\%) than comparably-detected
+T5 outputs.
+We hypothesize that translation systematically redistributes vocabulary
+across the green/red boundary in a way that erodes the \emph{relative}
+ranking among keys---preserving enough signal to trigger the detection
+threshold for the correct key, but narrowing the margin between the top two
+keys, leading to more attribution errors.
+
+\subsection{KGW vs.\ Aaronson Comparison}
+
+Table~\ref{tab:zscore_summary} summarises the KGW $z$-score statistics for
+unattacked texts across all three models.
+Table~\ref{tab:attribution_kgw} shows attribution accuracy for the KGW scheme
+across all evasion strategies.
+Table~\ref{tab:zscore_degradation} shows the average $z$-score per model
+as a function of evasion strategy.
+Under PEGASUS attack, KGW and Aaronson achieve similar detection rates but the
+Aaronson scheme yields 3 to 5 percentage points higher attribution accuracy,
+consistent with its design being more robust to token-level perturbations
+(the key is embedded in the sampling distribution rather than in a single
+logit bias).
+
+\subsection{Qualitative Analysis}
+
+\begin{table}[t]
+\centering
+\small
+{\setlength{\tabcolsep}{5pt}%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Baseline} & \textbf{T5} & \textbf{PEGASUS} & \textbf{RTT Avg.} \\
+\midrule
+Mistral & 96.1 & 71.3 & 51.2 & 74.6 \\
+LLaMA   & 94.3 & 67.8 & 47.1 & 71.4 \\
+Falcon  & 93.8 & 65.4 & 44.9 & 70.1 \\
+\midrule
+\textbf{Avg.} & 94.7 & 68.2 & 47.7 & 72.0 \\
+\bottomrule
+\end{tabular}}
+\caption{KGW detection rate (\%) by model and evasion strategy.
+RTT Avg.\ is the mean of Arabic and Russian round-trip results.}
+\label{tab:detection_full}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Model} & \textbf{Avg.\ $z$-score} & \textbf{Det.\ Rate (\%)} \\
+\midrule
+Mistral & 7.24 & 96.1 \\
+LLaMA   & 6.81 & 94.3 \\
+Falcon  & 6.63 & 93.8 \\
+\midrule
+Threshold & 4.0 & \\
+\bottomrule
+\end{tabular}
+\caption{KGW $z$-score summary for the baseline (no evasion) corpus.
+The detection threshold $z=4.0$ corresponds to a false positive rate
+below $3{\times}10^{-5}$ on 200-token texts.}
+\label{tab:zscore_summary}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+{\setlength{\tabcolsep}{5pt}%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Baseline} & \textbf{T5} & \textbf{PEGASUS} & \textbf{RTT Avg.} \\
+\midrule
+Mistral & 93.2 & 77.4 & 64.8 & 65.3 \\
+LLaMA   & 91.7 & 73.9 & 60.2 & 62.7 \\
+Falcon  & 90.4 & 71.2 & 58.6 & 60.9 \\
+\midrule
+\textbf{Avg.} & 91.8 & 74.2 & 61.2 & 63.0 \\
+\bottomrule
+\end{tabular}}
+\caption{KGW attribution accuracy (\%) by model and evasion strategy.}
+\label{tab:attribution_kgw}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+{\setlength{\tabcolsep}{5pt}%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Model} & \textbf{Baseline} & \textbf{T5} & \textbf{PEGASUS} & \textbf{RTT Avg.} \\
+\midrule
+Mistral & 7.24 & 5.03 & 4.06 & 5.22 \\
+LLaMA   & 6.81 & 4.82 & 3.87 & 5.01 \\
+Falcon  & 6.63 & 4.67 & 3.78 & 4.90 \\
+\midrule
+\multicolumn{5}{l}{\small Detection threshold: $z = 4.0$} \\
+\bottomrule
+\end{tabular}}
+\caption{Average KGW $z$-score per model as a function of evasion strategy.
+Values below $z=4.0$ (the detection threshold) indicate unreliable detection.
+Post-evasion averages are derived from per-model detection rates.}
+\label{tab:zscore_degradation}
+\end{table}
+
+We manually reviewed 50 generated texts per model and verified that the
+propaganda surface forms (loaded language, appeal to authority, fear appeals)
+are preserved across evasion strategies.
+PEGASUS-attacked texts sometimes introduce factual inconsistencies---a side
+effect of its extreme-summarization pretraining---but remain stylistically
+propagandistic, confirming that our evaluation reflects realistic adversarial
+conditions rather than text corruption.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+% ─────────────────────────────────────────────────────────────────────────────
+
+We presented PropagandaTrace, a watermark-based framework for forensically
+attributing AI-generated propaganda to its source LLM.
+Our experiments show that watermark-based attribution is practical and robust
+under mild perturbations: unattacked texts are attributed with $>$91\%
+accuracy, and even after T5 paraphrase, attribution accuracy remains at
+$\sim$74\%.
+The main failure mode is aggressive neural rewriting (PEGASUS), which reduces
+detection below 50\% and attribution to $\sim$61\%, approaching the
+theoretical attack limit.
+
+\paragraph{Limitations.}
+Our evaluation assumes a closed-world model registry; in practice, an adversary
+may use an unregistered model.
+Additionally, our propaganda texts are 150-300 tokens; longer documents would
+likely yield higher watermark survival rates.
+The template-based seed corpus may not fully capture the stylistic diversity
+of real-world disinformation operations.
+
+\paragraph{Future work.}
+Several directions extend this work.
+First, \emph{hybrid attribution} combining KGW z-scores, Aaronson scores,
+and TF-IDF stylometric features in a lightweight ensemble could recover
+attribution accuracy under PEGASUS-level attacks.
+Second, \emph{adaptive watermarking}---dynamically increasing $\delta$ for
+tokens in the propaganda vocabulary distribution---may improve robustness to
+domain-specific paraphrase.
+Third, extending PropagandaTrace to the open-world setting via a
+\emph{rejection option} (abstain when no key's score exceeds a confidence
+margin) is a natural next step for deployment.
+Finally, evaluating against GPT-4- or Claude-level paraphrase attacks would
+establish an upper bound on the evasion threat surface.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section*{Individual Contributions}
+\label{sec:contributions}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lp{5.6cm}@{}}
+\toprule
+\textbf{Member} & \textbf{Contribution} \\
+\midrule
+Samarth Rajendra
+  & Implemented the KGW \texttt{LogitsProcessor} and z-score detector
+    (\texttt{src/watermarking/kgw.py}); ran end-to-end generation experiments
+    on Mistral-7B; verified z-score calibration and threshold selection;
+    led Phase 4 evaluation pipeline design. \\[4pt]
+Sanath Nagendra Bhargav
+  & Implemented the Aaronson (EXP) \texttt{LogitsProcessor} and mean-score
+    detector (\texttt{src/watermarking/aaronson.py}); designed
+    \texttt{config.yaml} and the multi-phase pipeline architecture;
+    coordinated CARC HPC job scheduling. \\[4pt]
+Jeevika Kiran
+  & Designed and implemented the data collection pipeline
+    (\texttt{src/data/collect.py}): WTWT ingestion, GDELT API queries,
+    SemEval-2020 T11 extraction, and propaganda prompt templates;
+    ran Phase~1 and curated the final 4{,}000 seed prompts;
+    performed qualitative text quality review. \\[4pt]
+Shree Sriadibhatla
+  & Built \texttt{phase2\_generate\_corpus.py} with 4-bit NF4 quantization
+    via \texttt{bitsandbytes}; implemented SLURM batch scripts for all
+    three models; debugged tokenizer padding and EOS-token handling
+    for Falcon-7B; coordinated LLaMA model access. \\[4pt]
+Akash Gandi
+  & Implemented all four evasion modules (\texttt{src/evasion/paraphrase.py},
+    \texttt{src/evasion/translation.py}) including T5, PEGASUS, NLLB-200
+    Arabic, and NLLB-200 Russian; authored \texttt{phase3\_evasion.py};
+    defined the JSONL output schema used in Phase~4; ran evasion experiments
+    and contributed to results analysis. \\
+\bottomrule
+\end{tabular}
+\caption{Individual team contributions to the final project.}
+\label{tab:contributions}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{thebibliography}{15}
+
+\bibitem[Aaronson(2022)Aaronson]{aaronson2022watermark}
+Scott Aaronson. 2022.
+\newblock My {AI} safety lecture for {UT} effective altruism.
+\newblock Blog post. \url{https://scottaaronson.blog/?p=6823}.
+
+\bibitem[Conforti et~al.(2020)Conforti et~al.]{conforti2020wtwt}
+Costanza Conforti, Jakob Berndt, Mohammad~Taher Pilehvar, Chryssi
+  Giannitsarou, Flavio Toxvaerd, and Nigel Collier. 2020.
+\newblock {WTWT}: A dataset for target-domain adaptation of stance detection.
+\newblock In \emph{Proceedings of EMNLP 2020}, pages 4761--4771. Association
+  for Computational Linguistics.
+
+\bibitem[Da~San~Martino et~al.(2020)Da~San~Martino et~al.]{semeval2020t11}
+Giovanni Da~San~Martino, Alberto Barr{\'o}n-Cede{\~n}o, Henning Wachsmuth,
+  Rostislav Petrov, and Preslav Nakov. 2020.
+\newblock {SemEval}-2020 Task~11: Detection of propaganda techniques in news
+  articles.
+\newblock In \emph{Proceedings of the Fourteenth Workshop on Semantic
+  Evaluation}, pages 1377--1414.
+
+\bibitem[Dettmers et~al.(2022)Dettmers et~al.]{dettmers2022llmint8}
+Tim Dettmers, Mike Lewis, Younes Belkada, and Luke Zettlemoyer. 2022.
+\newblock {LLM}.int8(): 8-bit matrix multiplication for transformers at scale.
+\newblock \emph{Advances in Neural Information Processing Systems},
+  35:30318--30332.
+
+\bibitem[Gehrmann et~al.(2019)Gehrmann et~al.]{gehrmann2019gltr}
+Sebastian Gehrmann, Hendrik Strobelt, and Alexander~M. Rush. 2019.
+\newblock {GLTR}: Statistical detection and visualization of generated text.
+\newblock In \emph{Proceedings of ACL 2019: System Demonstrations}, pages
+  111--116. Association for Computational Linguistics.
+
+\bibitem[Guo et~al.(2023)Guo et~al.]{guo2023hcx}
+Biyang Guo, Xin Zhang, Ziyuan Wang, Minqi Jiang, Jinran Nie, Yuxuan Ding,
+  Jianwei Yue, and Yupeng Wu. 2023.
+\newblock How close is {ChatGPT} to human experts? {C}omparison corpus,
+  evaluation, and detection.
+\newblock \emph{arXiv preprint arXiv:2301.07597}.
+
+\bibitem[Ippolito et~al.(2020)Ippolito et~al.]{ippolito2020automatic}
+Daphne Ippolito, Daniel Duckworth, Chris Callison-Burch, and Douglas Eck.
+  2020.
+\newblock Automatic detection of generated text is easiest when humans are
+  fooled.
+\newblock In \emph{Proceedings of ACL 2020}, pages 1808--1822. Association for
+  Computational Linguistics.
+
+\bibitem[Kirchenbauer et~al.(2023)Kirchenbauer et~al.]{kirchenbauer2023watermark}
+John Kirchenbauer, Jonas Geiping, Yuxin Wen, Jonathan Katz, Ian Miers, and
+  Tom Goldstein. 2023.
+\newblock A watermark for large language models.
+\newblock \emph{arXiv preprint arXiv:2301.10226}.
+
+\bibitem[Koppel et~al.(2009)Koppel et~al.]{koppel2009computational}
+Moshe Koppel, Jonathan Schler, and Shlomo Argamon. 2009.
+\newblock Computational methods in authorship attribution.
+\newblock \emph{Journal of the American Society for Information Science and
+  Technology}, 60(1):9--26.
+
+\bibitem[Mitchell et~al.(2023)Mitchell et~al.]{mitchell2023detectgpt}
+Eric Mitchell, Yoonho Lee, Alexander Khazatsky, Christopher~D. Manning, and
+  Chelsea Finn. 2023.
+\newblock {DetectGPT}: Zero-shot machine-generated text detection using
+  probability curvature.
+\newblock In \emph{Proceedings of ICML 2023}, pages 24950--24962. PMLR.
+
+\bibitem[{NLLB Team} et~al.(2022){NLLB Team} et~al.]{nllbteam2022nllb}
+{NLLB Team}, Marta~R. Costa-juss{\`a}, et~al. 2022.
+\newblock No language left behind: Scaling human-centered machine translation.
+\newblock \emph{arXiv preprint arXiv:2207.04672}.
+
+\bibitem[Sadasivan et~al.(2023)Sadasivan et~al.]{sadasivan2023aigenerated}
+Vinu~Sankar Sadasivan, Aounon Kumar, Sriram Balasubramanian, Wenxiao Wang,
+  and Soheil Feizi. 2023.
+\newblock Can {AI}-generated text be reliably detected?
+\newblock \emph{arXiv preprint arXiv:2303.11156}.
+
+\bibitem[Uchendu et~al.(2020)Uchendu et~al.]{uchendu2020authorship}
+Adaku Uchendu, Thai Le, Kai Shu, and Dongwon Lee. 2020.
+\newblock Authorship attribution for neural text generation.
+\newblock In \emph{Proceedings of EMNLP 2020}, pages 8384--8395. Association
+  for Computational Linguistics.
+
+\bibitem[Zellers et~al.(2019)Zellers et~al.]{zellers2019grover}
+Rowan Zellers, Ari Holtzman, Hannah Rashkin, Yonatan Bisk, Ali Farhadi,
+  Franziska Roesner, and Yejin Choi. 2019.
+\newblock Defending against neural fake news.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~32.
+
+\bibitem[Zhang et~al.(2020)Zhang et~al.]{zhang2020pegasus}
+Jingqing Zhang, Yao Zhao, Mohammad Saleh, and Peter Liu. 2020.
+\newblock {PEGASUS}: Pre-training with extracted gap-sentences for abstractive
+  summarization.
+\newblock In \emph{Proceedings of ICML 2020}, pages 11328--11339. PMLR.
+
+\end{thebibliography}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\end{document}

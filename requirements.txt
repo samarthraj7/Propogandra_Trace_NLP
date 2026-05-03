@@ -1,0 +1,32 @@
+# Core ML/NLP
+torch>=2.1.0
+transformers>=4.40.0
+accelerate>=0.27.0
+bitsandbytes>=0.43.0   # 4-bit quantization for large LLMs
+sentencepiece>=0.2.0
+protobuf>=3.20.0
+
+# Dataset utilities
+datasets>=2.18.0
+huggingface-hub>=0.21.0
+
+# Data collection
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pandas>=2.1.0
+numpy>=1.26.0
+tqdm>=4.66.0
+
+# Evasion
+sacrebleu>=2.3.0       # BLEU scoring
+bert-score>=0.3.13     # BERTScore for semantic fidelity
+evaluate>=0.4.1        # HuggingFace evaluate metrics
+
+# Visualization / logging
+matplotlib>=3.8.0
+seaborn>=0.13.0
+scipy>=1.12.0
+
+# Misc
+pyyaml>=6.0.1
+jsonlines>=4.0.0

@@ -1,0 +1,49 @@
+paths:
+  raw_data:    data/raw
+  corpus:      data/corpus
+  evasion:     data/evasion
+  results:     data/results
+
+models:
+  mistral:
+    hf_id:    mistralai/Mistral-7B-Instruct-v0.2
+    key:      MISTRAL_KEY_47A
+    load_4bit: true
+  llama:
+    hf_id:    meta-llama/Meta-Llama-3-8B-Instruct
+    key:      LLAMA_KEY_47B
+    load_4bit: true
+  falcon:
+    hf_id:    tiiuae/falcon-7b-instruct
+    key:      FALCON_KEY_47C
+    load_4bit: true
+
+watermark:
+  kgw:
+    gamma:  0.25        # fraction of green-list tokens
+    delta:  2.0         # logit bias added to green tokens
+    z_threshold: 4.0    # detection z-score threshold
+  aaronson:
+    score_threshold: 0.8  # detection score threshold
+
+generation:
+  texts_per_model:  3000
+  min_new_tokens:   150
+  max_new_tokens:   300
+  batch_size:       4
+  temperature:      1.0
+  do_sample:        true
+
+evasion:
+  t5_model:      t5-large
+  pegasus_model: google/pegasus-xsum
+  nllb_model:    facebook/nllb-200-distilled-600M
+  languages:
+    - arabic       # ara_Arab
+    - russian      # rus_Cyrl
+  src_lang: eng_Latn
+
+dataset:
+  wtwt_hf_id:   conforti/wtwt
+  num_prompts:  4000
+  seed:         42

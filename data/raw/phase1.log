@@ -1,0 +1,56 @@
+2026-04-14 14:19:17,942 [INFO] ============================================================
+2026-04-14 14:19:17,942 [INFO] PropagandaTrace — Phase 1: Data Collection
+2026-04-14 14:19:17,942 [INFO] ============================================================
+2026-04-14 14:19:17,942 [INFO] Config:     config.yaml
+2026-04-14 14:19:17,942 [INFO] Output dir: data/raw
+2026-04-14 14:19:17,942 [INFO] Targets — WTWT:4000  GDELT:500  SemEval:200  Templates:1300
+2026-04-14 14:19:21,261 [INFO] TensorFlow version 2.15.0 available.
+2026-04-14 14:19:34,260 [INFO] Loading WTWT dataset from HuggingFace …
+2026-04-14 14:19:34,260 [ERROR] `trust_remote_code` is not supported anymore.
+Please check that the Hugging Face dataset 'conforti/wtwt' isn't based on a loading script and remove `trust_remote_code`.
+If the dataset is based on a loading script, please ask the dataset author to remove it and convert it to a standard format like Parquet.
+2026-04-14 14:19:34,460 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/conforti/wtwt/resolve/main/README.md "HTTP/1.1 401 Unauthorized"
+2026-04-14 14:19:34,460 [WARNING] WTWT HuggingFace load failed (Dataset 'conforti/wtwt' doesn't exist on the Hub or cannot be accessed.); trying alternate id …
+2026-04-14 14:19:34,552 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/tweet_eval/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:34,651 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/cardiffnlp/tweet_eval/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:34,652 [WARNING] Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-04-14 14:19:34,661 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/cardiffnlp/tweet_eval/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/README.md "HTTP/1.1 200 OK"
+2026-04-14 14:19:34,677 [INFO] HTTP Request: GET https://huggingface.co/api/resolve-cache/datasets/cardiffnlp/tweet_eval/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/README.md "HTTP/1.1 200 OK"
+2026-04-14 14:19:34,797 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/tweet_eval.py "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:34,888 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/cardiffnlp/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/tweet_eval.py "HTTP/1.1 404 Not Found"
+2026-04-14 14:19:35,144 [INFO] HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/tweet_eval/tweet_eval.py "HTTP/1.1 404 Not Found"
+2026-04-14 14:19:35,305 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/tweet_eval/revision/b3a375baf0f409c77e6bc7aa35102b7b3534f8be "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:35,397 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/cardiffnlp/tweet_eval/revision/b3a375baf0f409c77e6bc7aa35102b7b3534f8be "HTTP/1.1 200 OK"
+2026-04-14 14:19:35,508 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/.huggingface.yaml "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:35,607 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/cardiffnlp/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/.huggingface.yaml "HTTP/1.1 404 Not Found"
+2026-04-14 14:19:35,749 [INFO] HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=tweet_eval "HTTP/1.1 404 Not Found"
+2026-04-14 14:19:35,880 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/tweet_eval/tree/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/emoji?recursive=true&expand=false "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:35,990 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/cardiffnlp/tweet_eval/tree/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/emoji?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-04-14 14:19:36,084 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/tweet_eval/tree/b3a375baf0f409c77e6bc7aa35102b7b3534f8be?recursive=false&expand=false "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:36,176 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/cardiffnlp/tweet_eval/tree/b3a375baf0f409c77e6bc7aa35102b7b3534f8be?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-04-14 14:19:36,277 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/dataset_infos.json "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:36,369 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/cardiffnlp/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/dataset_infos.json "HTTP/1.1 404 Not Found"
+2026-04-14 14:19:36,462 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/tweet_eval/tree/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/stance_feminist?recursive=true&expand=false "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:36,576 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/cardiffnlp/tweet_eval/tree/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/stance_feminist?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-04-14 14:19:40,092 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/stance_feminist/train-00000-of-00001.parquet "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:40,192 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/cardiffnlp/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/stance_feminist/train-00000-of-00001.parquet "HTTP/1.1 302 Found"
+2026-04-14 14:19:40,330 [INFO] HTTP Request: GET https://huggingface.co/api/datasets/cardiffnlp/tweet_eval/xet-read-token/b3a375baf0f409c77e6bc7aa35102b7b3534f8be "HTTP/1.1 200 OK"
+2026-04-14 14:19:41,458 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/stance_feminist/test-00000-of-00001.parquet "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:41,545 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/cardiffnlp/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/stance_feminist/test-00000-of-00001.parquet "HTTP/1.1 302 Found"
+2026-04-14 14:19:42,863 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/stance_feminist/validation-00000-of-00001.parquet "HTTP/1.1 307 Temporary Redirect"
+2026-04-14 14:19:42,975 [INFO] HTTP Request: HEAD https://huggingface.co/datasets/cardiffnlp/tweet_eval/resolve/b3a375baf0f409c77e6bc7aa35102b7b3534f8be/stance_feminist/validation-00000-of-00001.parquet "HTTP/1.1 302 Found"
+2026-04-14 14:19:43,786 [WARNING] Falling back to tweet_eval stance dataset as proxy for WTWT.
+2026-04-14 14:19:44,203 [WARNING] GDELT query 'military offensive attack' failed: 429 Client Error: Too Many Requests for url: https://api.gdeltproject.org/api/v2/doc/doc?query=military+offensive+attack&mode=ArtList&maxrecords=50&startdatetime=20250414211943&enddatetime=20260414211943&format=json
+2026-04-14 14:19:44,439 [WARNING] GDELT query 'war propaganda disinformation' failed: 429 Client Error: Too Many Requests for url: https://api.gdeltproject.org/api/v2/doc/doc?query=war+propaganda+disinformation&mode=ArtList&maxrecords=50&startdatetime=20250414211943&enddatetime=20260414211943&format=json
+2026-04-14 14:19:44,768 [WARNING] GDELT query 'wartime civilian casualties' failed: 429 Client Error: Too Many Requests for url: https://api.gdeltproject.org/api/v2/doc/doc?query=wartime+civilian+casualties&mode=ArtList&maxrecords=50&startdatetime=20250414211943&enddatetime=20260414211943&format=json
+2026-04-14 14:19:44,990 [WARNING] GDELT query 'military operation ceasefire' failed: 429 Client Error: Too Many Requests for url: https://api.gdeltproject.org/api/v2/doc/doc?query=military+operation+ceasefire&mode=ArtList&maxrecords=50&startdatetime=20250414211943&enddatetime=20260414211943&format=json
+2026-04-14 14:19:45,275 [WARNING] GDELT query 'conflict geopolitical tension' failed: 429 Client Error: Too Many Requests for url: https://api.gdeltproject.org/api/v2/doc/doc?query=conflict+geopolitical+tension&mode=ArtList&maxrecords=50&startdatetime=20250414211943&enddatetime=20260414211943&format=json
+2026-04-14 14:19:45,545 [WARNING] GDELT query 'armed forces strategic advance' failed: 429 Client Error: Too Many Requests for url: https://api.gdeltproject.org/api/v2/doc/doc?query=armed+forces+strategic+advance&mode=ArtList&maxrecords=50&startdatetime=20250414211943&enddatetime=20260414211943&format=json
+2026-04-14 14:19:45,545 [INFO] GDELT total collected: 0 article snippets.
+2026-04-14 14:19:47,077 [INFO] SemEval total collected: 0 paragraphs.
+2026-04-14 14:19:47,103 [INFO] Collection complete. 1226 prompts saved to data\raw\seed_prompts.jsonl
+2026-04-14 14:19:47,103 [INFO] Source breakdown: {'total': 1226, 'wtwt': 597, 'gdelt': 0, 'semeval2020': 0, 'template': 629, 'collected_at': '2026-04-14T21:19:47.103037Z'}
+2026-04-14 14:19:47,103 [INFO] ------------------------------------------------------------
+2026-04-14 14:19:47,103 [INFO] Phase 1 complete.  Total seed prompts: 1226
+2026-04-14 14:19:47,103 [INFO] Output: data/raw/seed_prompts.jsonl
+2026-04-14 14:19:47,103 [INFO] ------------------------------------------------------------
