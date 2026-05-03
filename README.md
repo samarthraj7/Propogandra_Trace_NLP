@@ -22,7 +22,6 @@ project/
 ├── phase2_generate_corpus.py    # Watermarked corpus generation (3 LLMs × 2 schemes)
 ├── phase3_evasion.py            # Evasion attack simulation (4 strategies)
 ├── phase4_evaluate.py           # Detection, attribution, metrics & plots
-├── make_ppt.py                  # Auto-generate presentation (PPTX)
 ├── PropagandaTrace_Colab.ipynb  # End-to-end notebook for Google Colab
 ├── src/
 │   ├── data/
@@ -38,16 +37,11 @@ project/
 │   │   └── translation.py       # NLLB-200 round-trip translation (Arabic, Russian)
 │   └── evaluation/
 │       └── detect.py            # Score all files, compute metrics, run attribution
-├── data/
-│   ├── raw/                     # Phase 1 output (seed_prompts.jsonl, stats)
-│   ├── corpus/                  # Phase 2 output (6 JSONL files, 18,000 texts)
-│   ├── evasion/                 # Phase 3 output (24 JSONL files, evaded texts)
-│   └── results/                 # Phase 4 output (CSVs, plots)
-├── report/
-│   ├── NLP_final_report_1.tex   # Final report (LaTeX)
-│   ├── midterm_report.tex       # Midterm report (LaTeX)
-│   └── references.bib           # Bibliography
-└── PropagandaTrace_group_47.pdf # Group submission PDF
+└── data/
+    ├── raw/                     # Phase 1 output (seed_prompts.jsonl, stats)
+    ├── corpus/                  # Phase 2 output (6 JSONL files, 18,000 texts)
+    ├── evasion/                 # Phase 3 output (24 JSONL files, evaded texts)
+    └── results/                 # Phase 4 output (CSVs, plots)
 ```
 
 ---
